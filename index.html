@@ -7,7 +7,7 @@
 html, body {
   margin:0; padding:0;
   width:100%; height:100%;
-  background: transparent;
+  background: transparent; /* прозрачный фон */
   overflow:hidden;
   font-family:"Segoe UI",sans-serif;
 }
@@ -16,8 +16,7 @@ html, body {
   position:fixed;
   top:0; left:0;
   width:100%; height:100%;
-  background: rgba(0,0,0,0.5);
-  display:none;
+  display:none; /* изначально скрыта */
   justify-content:center;
   align-items:center;
   z-index:9999;
@@ -25,38 +24,47 @@ html, body {
 }
 
 .card {
-  width:480px;
-  max-width:90%;
-  padding:40px 30px;
+  width:90%; height:90%; /* почти весь слайд */
+  padding:20px;
   background: linear-gradient(135deg,#1e3c72,#2a5298);
-  border-radius:26px;
+  border-radius:20px;
   color:#fff;
   text-align:center;
   box-shadow: 0 25px 45px rgba(0,0,0,0.55), 0 0 35px rgba(0,180,255,0.45);
-  transform: rotateX(8deg) rotateY(-8deg);
+  transform: rotateX(4deg) rotateY(-4deg);
   animation: float 4s ease-in-out infinite;
   position: relative;
+  display:flex;
+  flex-direction: column;
 }
 
 .card::before {
   content:"";
   position:absolute;
   inset:-3px;
-  border-radius:30px;
+  border-radius:23px;
   background: linear-gradient(120deg,#6dd5fa,#2980b9,#6dd5fa);
   filter: blur(20px);
   z-index:-1;
 }
 
-h1 {font-size:26px;margin-bottom:14px;}
-p {font-size:18px;margin-bottom:22px;line-height:1.4;}
-.timer {font-size:26px;font-weight:bold;letter-spacing:1px;margin-bottom:20px;}
-.task-container {width:100%; height:200px; background:#fff; border-radius:15px; overflow:auto; color:#000; padding:10px; box-sizing:border-box;}
+h1 {font-size:28px;margin-bottom:10px;}
+p {font-size:20px;margin-bottom:10px;line-height:1.4;}
+.timer {font-size:28px;font-weight:bold;letter-spacing:1px;margin-bottom:15px;}
+.task-container {
+  flex:1;
+  background:#fff;
+  border-radius:15px;
+  overflow:auto;
+  color:#000;
+  padding:10px;
+  box-sizing:border-box;
+}
 
 @keyframes float {
-  0%   { transform: rotateX(8deg) rotateY(-8deg) translateY(0); }
-  50%  { transform: rotateX(6deg) rotateY(-6deg) translateY(-10px); }
-  100% { transform: rotateX(8deg) rotateY(-8deg) translateY(0); }
+  0%   { transform: rotateX(4deg) rotateY(-4deg) translateY(0); }
+  50%  { transform: rotateX(2deg) rotateY(-2deg) translateY(-5px); }
+  100% { transform: rotateX(4deg) rotateY(-4deg) translateY(0); }
 }
 </style>
 </head>
@@ -64,22 +72,23 @@ p {font-size:18px;margin-bottom:22px;line-height:1.4;}
 
 <div class="overlay" id="overlay">
   <div class="card">
-    <h1 id="title">Небольшая пауза 🌿</h1>
-    <p id="text">Переведи дыхание — сейчас сделаем полезное упражнение</p>
-    <div class="timer" id="timer">00:10</div>
+    <h1 id="title">Нейрокарточка 🌿</h1>
+    <p id="text">Сосредоточься и выполняй задание</p>
+    <div class="timer" id="timer">01:00</div>
     <div class="task-container" id="taskContainer">
-      <!-- Встроенное задание вставляется сюда -->
+      <!-- Встроенное задание -->
+      <p>Здесь можно вставить любое задание: текст, картинку или iframe</p>
     </div>
   </div>
 </div>
 
 <script>
 /* ===== НАСТРОЙКИ ===== */
-let interactionEvery = 5;   // N кликов до паузы (0 = отключено)
-let activeMinutes = 1;      // N минут активного времени (0 = отключено)
-let idleTimeout = 20;       // секунд без активности, чтобы не считать активное время
-let pauseSeconds = 10;      // длительность паузы
-let taskHTML = "<p>Здесь можно вставить любое задание: текст, картинку, iframe</p>"; // пример задания
+let interactionEvery = 5;    // кликов до паузы
+let activeMinutes = 1;       // активного времени до паузы
+let idleTimeout = 20;        // секунд без действий
+let pauseSeconds = 60;       // таймер карточки
+let taskHTML = "<p>Вставь сюда любое задание: текст, картинку, iframe</p>";
 /* ===================== */
 
 const overlay = document.getElementById("overlay");
@@ -91,12 +100,12 @@ const taskContainer = document.getElementById("taskContainer");
 taskContainer.innerHTML = taskHTML;
 
 let clickCounter = 0;
-let activeTime = 0; // в секундах
+let activeTime = 0;
 let idleCounter = 0;
 let pausePhase = false;
 let timer = pauseSeconds;
 
-// ===== Триггеры =====
+// ===== Триггеры по кликам =====
 document.addEventListener("pointerdown", () => {
   clickCounter++;
   idleCounter = 0;
@@ -109,7 +118,6 @@ document.addEventListener("pointerdown", () => {
 // ===== Активное время =====
 setInterval(() => {
   if(pausePhase) return;
-
   idleCounter++;
   if(idleCounter < idleTimeout){
     activeTime++;
@@ -129,18 +137,20 @@ function showPause(){
 
 // ===== Обновление таймера =====
 function updateTimer(){
-  timerEl.textContent = String(timer).padStart(2,"0");
+  const m = String(Math.floor(timer/60)).padStart(2,"0");
+  const s = String(timer%60).padStart(2,"0");
+  timerEl.textContent = m + ":" + s;
 }
 
+// ===== Таймер обратного отсчета =====
 const interval = setInterval(()=>{
   if(!pausePhase) return;
-
   timer--;
   if(timer<0) timer=0;
   updateTimer();
 
   if(timer===0 && pausePhase){
-    // Закрываем паузу и сбрасываем триггеры
+    // закрываем паузу
     pausePhase=false;
     overlay.style.display="none";
     clickCounter=0;
