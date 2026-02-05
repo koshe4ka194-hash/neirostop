@@ -2,31 +2,37 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Нейропауза</title>
+<title>Нейрокарточка</title>
 <style>
 html, body {
   margin:0; padding:0;
   width:100%; height:100%;
   background: transparent;
-  display:flex; justify-content:center; align-items:center;
-  font-family:"Segoe UI", sans-serif;
   overflow:hidden;
+  font-family:"Segoe UI",sans-serif;
 }
 
-.scene {
-  perspective:1200px;
+.overlay {
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.5);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:9999;
+  pointer-events: all;
 }
 
 .card {
-  width:420px;
-  padding:38px 30px;
+  width:480px;
+  max-width:90%;
+  padding:40px 30px;
   background: linear-gradient(135deg,#1e3c72,#2a5298);
   border-radius:26px;
   color:#fff;
   text-align:center;
-  box-shadow:
-    0 25px 45px rgba(0,0,0,0.55),
-    0 0 35px rgba(0,180,255,0.45);
+  box-shadow: 0 25px 45px rgba(0,0,0,0.55), 0 0 35px rgba(0,180,255,0.45);
   transform: rotateX(8deg) rotateY(-8deg);
   animation: float 4s ease-in-out infinite;
   position: relative;
@@ -44,7 +50,8 @@ html, body {
 
 h1 {font-size:26px;margin-bottom:14px;}
 p {font-size:18px;margin-bottom:22px;line-height:1.4;}
-.timer {font-size:26px;font-weight:bold;letter-spacing:1px;}
+.timer {font-size:26px;font-weight:bold;letter-spacing:1px;margin-bottom:20px;}
+.task-container {width:100%; height:200px; background:#fff; border-radius:15px; overflow:auto; color:#000; padding:10px; box-sizing:border-box;}
 
 @keyframes float {
   0%   { transform: rotateX(8deg) rotateY(-8deg) translateY(0); }
@@ -55,61 +62,93 @@ p {font-size:18px;margin-bottom:22px;line-height:1.4;}
 </head>
 <body>
 
-<div class="scene">
+<div class="overlay" id="overlay">
   <div class="card">
     <h1 id="title">Небольшая пауза 🌿</h1>
-    <p id="text">Переведи дыхание —<br>сейчас сделаем полезное упражнение</p>
+    <p id="text">Переведи дыхание — сейчас сделаем полезное упражнение</p>
     <div class="timer" id="timer">00:10</div>
+    <div class="task-container" id="taskContainer">
+      <!-- Встроенное задание вставляется сюда -->
+    </div>
   </div>
 </div>
 
 <script>
 /* ===== НАСТРОЙКИ ===== */
-const PAUSE_TIME = 10;   // пауза перед нейрозаданием
-const NEURO_TIME = 60;   // время нейроупражнения
-const NEURO_SLIDE = 2;   // номер слайда с нейрозаданием
-const MAIN_SLIDE  = 1;   // номер основного слайда
+let interactionEvery = 5;   // N кликов до паузы (0 = отключено)
+let activeMinutes = 1;      // N минут активного времени (0 = отключено)
+let idleTimeout = 20;       // секунд без активности, чтобы не считать активное время
+let pauseSeconds = 10;      // длительность паузы
+let taskHTML = "<p>Здесь можно вставить любое задание: текст, картинку, iframe</p>"; // пример задания
 /* ===================== */
 
-let time = PAUSE_TIME;
-let phase = "pause";
+const overlay = document.getElementById("overlay");
 const timerEl = document.getElementById("timer");
 const titleEl = document.getElementById("title");
-const textEl = document.getElementById("text");
+const textEl  = document.getElementById("text");
+const taskContainer = document.getElementById("taskContainer");
 
-function goToSlide(slide) {
-  // Надежный тип события для Genially
-  window.parent.postMessage({
-    type: "genially:gotoPage",
-    page: slide
-  }, "*");
+taskContainer.innerHTML = taskHTML;
+
+let clickCounter = 0;
+let activeTime = 0; // в секундах
+let idleCounter = 0;
+let pausePhase = false;
+let timer = pauseSeconds;
+
+// ===== Триггеры =====
+document.addEventListener("pointerdown", () => {
+  clickCounter++;
+  idleCounter = 0;
+
+  if(!pausePhase && interactionEvery > 0 && clickCounter >= interactionEvery){
+    showPause();
+  }
+});
+
+// ===== Активное время =====
+setInterval(() => {
+  if(pausePhase) return;
+
+  idleCounter++;
+  if(idleCounter < idleTimeout){
+    activeTime++;
+    if(activeMinutes > 0 && activeTime >= activeMinutes * 60){
+      showPause();
+    }
+  }
+},1000);
+
+// ===== Показ паузы =====
+function showPause(){
+  pausePhase = true;
+  overlay.style.display = "flex";
+  timer = pauseSeconds;
+  updateTimer();
 }
 
-function updateTimer() {
-  const m = String(Math.floor(time/60)).padStart(2,"0");
-  const s = String(time%60).padStart(2,"0");
-  timerEl.textContent = m + ":" + s;
+// ===== Обновление таймера =====
+function updateTimer(){
+  timerEl.textContent = String(timer).padStart(2,"0");
 }
 
-// Основной интервал таймера
-const interval = setInterval(() => {
-  time--;
-  if(time<0) time=0;
+const interval = setInterval(()=>{
+  if(!pausePhase) return;
+
+  timer--;
+  if(timer<0) timer=0;
   updateTimer();
 
-  if(time===0 && phase==="pause") {
-    phase="neuro";
-    time=NEURO_TIME;
-    titleEl.textContent="Нейроупражнение 🧠";
-    textEl.innerHTML="Выполняй задание спокойно,<br>не спеша";
-    goToSlide(NEURO_SLIDE);
+  if(timer===0 && pausePhase){
+    // Закрываем паузу и сбрасываем триггеры
+    pausePhase=false;
+    overlay.style.display="none";
+    clickCounter=0;
+    activeTime=0;
+    idleCounter=0;
   }
-  else if(time===0 && phase==="neuro") {
-    clearInterval(interval);
-    goToSlide(MAIN_SLIDE);
-  }
-}, 1000);
-</script>
+},1000);
 
+</script>
 </body>
 </html>' width="100%" height="600" frameborder="0" style="border:0;"></iframe>
