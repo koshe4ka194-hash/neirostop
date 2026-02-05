@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Neuro-Stop</title>
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* Оверлей */
+  #neurostop-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5); /* 50% затемнение */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: all;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 9999;
+  }
+
+  #neurostop-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Карточка */
+  .card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px 28px;
+    max-width: 320px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    transform: scale(0.96);
+    transition: transform 0.2s ease;
+  }
+
+  #neurostop-overlay.active .card {
+    transform: scale(1);
+  }
+
+  .text {
+    font-size: 16px;
+    line-height: 1.4;
+    margin-bottom: 16px;
+  }
+
+  .timer {
+    font-size: 40px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .btn {
+    display: none;
+    margin-top: 8px;
+    padding: 10px 18px;
+    font-size: 15px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    background: #222;
+    color: #fff;
+  }
+
+  .btn.show {
+    display: inline-block;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="neurostop-overlay">
+  <div class="card">
+    <div class="text" id="pauseText"></div>
+    <div class="timer" id="timer">0</div>
+    <button class="btn" id="continueBtn">Продолжить</button>
+  </div>
+</div>
+
+<script>
+/* -----------------------------
+   ПАРАМЕТРЫ ИЗ URL
+-------------------------------- */
+const params = new URLSearchParams(window.location.search);
+
+const interactionEvery = parseInt(params.get('interactionEvery')) || 5;
+const activeMinutes     = parseInt(params.get('activeMinutes')) || 5;
+const pauseSeconds      = parseInt(params.get('pauseSeconds')) || 10;
+const idleTimeout       = parseInt(params.get('idleTimeout')) || 20;
+const mode              = params.get('mode') || 'strict';
+const text              = decodeURIComponent(
+  params.get('text') || 'Стоп. Дай мозгу 10 секунд отдохнуть.'
+);
+
+/* -----------------------------
+   СОСТОЯНИЯ
+-------------------------------- */
+let interactionCount = 0;
+let activeTime = 0; // в секундах
+let lastInteraction = null;
+let activeTimerInterval = null;
+let pauseInterval = null;
+let pauseRemaining = 0;
+let paused = false;
+
+/* -----------------------------
+   DOM
+-------------------------------- */
+const overlay = document.getElementById('neurostop-overlay');
+const timerEl = document.getElementById('timer');
+const textEl = document.getElementById('pauseText');
+const btn = document.getElementById('continueBtn');
+
+textEl.textContent = text;
+
+/* -----------------------------
+   АКТИВНОСТЬ ПОЛЬЗОВАТЕЛЯ
+-------------------------------- */
+function onUserInteraction() {
+  if (paused) return;
+
+  const now = Date.now();
+  lastInteraction = now;
+
+  // Триггер 2 — счётчик действий
+  if (interactionEvery > 0) {
+    interactionCount++;
+    if (interactionCount >= interactionEvery) {
+      triggerPause();
+      return;
+    }
+  }
+}
+
+/* -----------------------------
+   ТАЙМЕР АКТИВНОСТИ
+-------------------------------- */
+function startActiveTimer() {
+  if (activeTimerInterval) return;
+
+  activeTimerInterval = setInterval(() => {
+    if (paused || activeMinutes <= 0) return;
+
+    const now = Date.now();
+    if (!lastInteraction) return;
+
+    const idleSeconds = (now - lastInteraction) / 1000;
+    if (idleSeconds <= idleTimeout) {
+      activeTime++;
+      if (activeTime >= activeMinutes * 60) {
+        triggerPause();
+      }
+    }
+  }, 1000);
+}
+
+/* -----------------------------
+   ПАУЗА
+-------------------------------- */
+function triggerPause() {
+  paused = true;
+
+  // заморозка счётчиков
+  interactionCount = 0;
+  activeTime = 0;
+
+  overlay.classList.add('active');
+  pauseRemaining = pauseSeconds;
+  timerEl.textContent = pauseRemaining;
+  btn.classList.remove('show');
+
+  pauseInterval = setInterval(() => {
+    pauseRemaining--;
+    timerEl.textContent = pauseRemaining;
+
+    if (pauseRemaining <= 0) {
+      clearInterval(pauseInterval);
+      if (mode === 'strict') {
+        btn.classList.add('show');
+      } else {
+        endPause();
+      }
+    }
+  }, 1000);
+}
+
+function endPause() {
+  paused = false;
+  overlay.classList.remove('active');
+  btn.classList.remove('show');
+  lastInteraction = Date.now();
+}
+
+/* -----------------------------
+   СОБЫТИЯ
+-------------------------------- */
+document.addEventListener('pointerdown', onUserInteraction, true);
+document.addEventListener('click', onUserInteraction, true);
+
+btn.addEventListener('click', endPause);
+
+/* -----------------------------
+   СТАРТ
+-------------------------------- */
+startActiveTimer();
+</script>
+
+</body>
+</html>
