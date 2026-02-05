@@ -4,17 +4,57 @@
 <meta charset="UTF-8">
 <title>Нейропауза</title>
 <style>
-html, body {margin:0;padding:0;width:100%;height:100%;background:radial-gradient(circle at top,#1b2735,#090a0f);display:flex;align-items:center;justify-content:center;font-family:"Segoe UI",sans-serif;}
-.scene {perspective:1200px;}
-.card {width:420px;padding:38px 30px;background:linear-gradient(135deg,#1e3c72,#2a5298);border-radius:26px;color:#fff;text-align:center;box-shadow:0 25px 45px rgba(0,0,0,0.55),0 0 35px rgba(0,180,255,0.45);transform:rotateX(8deg) rotateY(-8deg);animation:float 4s ease-in-out infinite;position:relative;}
-.card::before {content:"";position:absolute;inset:-3px;border-radius:30px;background:linear-gradient(120deg,#6dd5fa,#2980b9,#6dd5fa);filter:blur(20px);z-index:-1;}
+html, body {
+  margin:0; padding:0;
+  width:100%; height:100%;
+  background: transparent;
+  display:flex; justify-content:center; align-items:center;
+  font-family:"Segoe UI", sans-serif;
+  overflow:hidden;
+}
+
+.scene {
+  perspective:1200px;
+}
+
+.card {
+  width:420px;
+  padding:38px 30px;
+  background: linear-gradient(135deg,#1e3c72,#2a5298);
+  border-radius:26px;
+  color:#fff;
+  text-align:center;
+  box-shadow:
+    0 25px 45px rgba(0,0,0,0.55),
+    0 0 35px rgba(0,180,255,0.45);
+  transform: rotateX(8deg) rotateY(-8deg);
+  animation: float 4s ease-in-out infinite;
+  position: relative;
+}
+
+.card::before {
+  content:"";
+  position:absolute;
+  inset:-3px;
+  border-radius:30px;
+  background: linear-gradient(120deg,#6dd5fa,#2980b9,#6dd5fa);
+  filter: blur(20px);
+  z-index:-1;
+}
+
 h1 {font-size:26px;margin-bottom:14px;}
 p {font-size:18px;margin-bottom:22px;line-height:1.4;}
 .timer {font-size:26px;font-weight:bold;letter-spacing:1px;}
-@keyframes float {0% {transform:rotateX(8deg) rotateY(-8deg) translateY(0);}50% {transform:rotateX(6deg) rotateY(-6deg) translateY(-10px);}100% {transform:rotateX(8deg) rotateY(-8deg) translateY(0);}}
+
+@keyframes float {
+  0%   { transform: rotateX(8deg) rotateY(-8deg) translateY(0); }
+  50%  { transform: rotateX(6deg) rotateY(-6deg) translateY(-10px); }
+  100% { transform: rotateX(8deg) rotateY(-8deg) translateY(0); }
+}
 </style>
 </head>
 <body>
+
 <div class="scene">
   <div class="card">
     <h1 id="title">Небольшая пауза 🌿</h1>
@@ -22,11 +62,14 @@ p {font-size:18px;margin-bottom:22px;line-height:1.4;}
     <div class="timer" id="timer">00:10</div>
   </div>
 </div>
+
 <script>
-const PAUSE_TIME = 10;
-const NEURO_TIME = 60;
-const NEURO_SLIDE = 3;
-const MAIN_SLIDE = 4;
+/* ===== НАСТРОЙКИ ===== */
+const PAUSE_TIME = 10;   // пауза перед нейрозаданием
+const NEURO_TIME = 60;   // время нейроупражнения
+const NEURO_SLIDE = 2;   // номер слайда с нейрозаданием
+const MAIN_SLIDE  = 1;   // номер основного слайда
+/* ===================== */
 
 let time = PAUSE_TIME;
 let phase = "pause";
@@ -35,20 +78,25 @@ const titleEl = document.getElementById("title");
 const textEl = document.getElementById("text");
 
 function goToSlide(slide) {
-  window.parent.postMessage({ type: "genially:goToPage", page: slide }, "*");
+  // Надежный тип события для Genially
+  window.parent.postMessage({
+    type: "genially:gotoPage",
+    page: slide
+  }, "*");
 }
 
 function updateTimer() {
   const m = String(Math.floor(time/60)).padStart(2,"0");
   const s = String(time%60).padStart(2,"0");
-  timerEl.textContent = m+":"+s;
+  timerEl.textContent = m + ":" + s;
 }
 
+// Основной интервал таймера
 const interval = setInterval(() => {
   time--;
   if(time<0) time=0;
   updateTimer();
-  
+
   if(time===0 && phase==="pause") {
     phase="neuro";
     time=NEURO_TIME;
@@ -60,7 +108,8 @@ const interval = setInterval(() => {
     clearInterval(interval);
     goToSlide(MAIN_SLIDE);
   }
-},1000);
+}, 1000);
 </script>
+
 </body>
-</html>' width="100%" height="600" frameborder="0"></iframe>
+</html>' width="100%" height="600" frameborder="0" style="border:0;"></iframe>
