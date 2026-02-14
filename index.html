@@ -1,164 +1,129 @@
-<iframe srcdoc='<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Нейрокарточка</title>
-<style>
-html, body {
-  margin:0; padding:0;
-  width:100%; height:100%;
-  background: transparent; /* прозрачный фон */
-  overflow:hidden;
-  font-family:"Segoe UI",sans-serif;
-}
-
-.overlay {
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  display:none; /* изначально скрыта */
-  justify-content:center;
-  align-items:center;
-  z-index:9999;
-  pointer-events: all;
-}
-
-.card {
-  width:90%; height:90%; /* почти весь слайд */
-  padding:20px;
-  background: linear-gradient(135deg,#1e3c72,#2a5298);
-  border-radius:20px;
-  color:#fff;
-  text-align:center;
-  box-shadow: 0 25px 45px rgba(0,0,0,0.55), 0 0 35px rgba(0,180,255,0.45);
-  transform: rotateX(4deg) rotateY(-4deg);
-  animation: float 4s ease-in-out infinite;
-  position: relative;
-  display:flex;
-  flex-direction: column;
-}
-
-.card::before {
-  content:"";
-  position:absolute;
-  inset:-3px;
-  border-radius:23px;
-  background: linear-gradient(120deg,#6dd5fa,#2980b9,#6dd5fa);
-  filter: blur(20px);
-  z-index:-1;
-}
-
-h1 {font-size:28px;margin-bottom:10px;}
-p {font-size:20px;margin-bottom:10px;line-height:1.4;}
-.timer {font-size:28px;font-weight:bold;letter-spacing:1px;margin-bottom:15px;}
-.task-container {
-  flex:1;
-  background:#fff;
-  border-radius:15px;
-  overflow:auto;
-  color:#000;
-  padding:10px;
-  box-sizing:border-box;
-}
-
-@keyframes float {
-  0%   { transform: rotateX(4deg) rotateY(-4deg) translateY(0); }
-  50%  { transform: rotateX(2deg) rotateY(-2deg) translateY(-5px); }
-  100% { transform: rotateX(4deg) rotateY(-4deg) translateY(0); }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro-Pause: GitHub Edition</title>
+    <style>
+        :root { --primary: #2dd4bf; --bg: #f8fafc; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: sans-serif; background: transparent; overflow: hidden; }
+        
+        /* Стили Редактора (скрыты по умолчанию) */
+        #editor { display: none; background: var(--bg); padding: 20px; overflow-y: auto; height: 100vh; box-sizing: border-box; }
+        .config-card { background: white; max-width: 500px; margin: 0 auto; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        /* Стили Карточки Паузы */
+        #pause-overlay { display: none; position: fixed; inset: 0; align-items: center; justify-content: center; z-index: 9999; }
+        #pause-overlay.active { display: flex; }
+        .card { background: white; padding: 30px; border-radius: 35px; text-align: center; width: 280px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid var(--primary); }
+        .icon { font-size: 50px; display: block; margin-bottom: 10px; }
+        .task { background: #f0fdfa; padding: 15px; border-radius: 20px; margin: 15px 0; border: 1px dashed var(--primary); }
+        .timer { width: 50px; height: 50px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-weight: bold; }
+        .btn { background: #fbbf24; color: #78350f; border: none; padding: 15px; border-radius: 15px; width: 100%; cursor: pointer; font-weight: bold; display: none; }
+        
+        input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #ddd; border-radius: 10px; }
+        #link-output { background: #e2e8f0; padding: 10px; border-radius: 10px; word-break: break-all; font-size: 12px; margin-top: 10px; }
+    </style>
 </head>
 <body>
 
-<div class="overlay" id="overlay">
-  <div class="card">
-    <h1 id="title">Нейрокарточка 🌿</h1>
-    <p id="text">Сосредоточься и выполняй задание</p>
-    <div class="timer" id="timer">01:00</div>
-    <div class="task-container" id="taskContainer">
-      <!-- Встроенное задание -->
-      <p>Здесь можно вставить любое задание: текст, картинку или iframe</p>
+    <div id="editor">
+        <div class="config-card">
+            <h2>⚙️ Конструктор ссылки</h2>
+            <label>Язык:</label>
+            <select id="L"><option value="RU">Русский</option><option value="EN">English</option><option value="DE">Deutsch</option><option value="CN">中文</option></select>
+            
+            <label>Шрифт:</label>
+            <select id="F"><option value="sans-serif">Обычный</option><option value="OpenDyslexic">OpenDyslexic</option></select>
+            
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1"><label>Работа (мин):</label><input type="number" id="W" value="12"></div>
+                <div style="flex:1"><label>Пауза (сек):</label><input type="number" id="P" value="30"></div>
+            </div>
+
+            <label>Задания (Иконка|Текст):</label>
+            <textarea id="T">🧘|Дышите глубже
+💧|Попейте воды</textarea>
+
+            <button onclick="generateLink()" style="width:100%; padding:15px; background:var(--primary); border:none; border-radius:10px; color:white; font-weight:bold; cursor:pointer;">СОЗДАТЬ ССЫЛКУ ДЛЯ GENIALLY</button>
+            
+            <div id="link-output"></div>
+        </div>
     </div>
-  </div>
-</div>
 
-<script>
-/* ===== НАСТРОЙКИ ===== */
-let interactionEvery = 5;    // кликов до паузы
-let activeMinutes = 1;       // активного времени до паузы
-let idleTimeout = 20;        // секунд без действий
-let pauseSeconds = 60;       // таймер карточки
-let taskHTML = "<p>Вставь сюда любое задание: текст, картинку, iframe</p>";
-/* ===================== */
+    <div id="pause-overlay">
+        <div class="card">
+            <span id="ci" class="icon"></span>
+            <div id="ch" style="font-weight:bold; font-size:20px; color:#134e4a;"></div>
+            <div id="ct" class="task"></div>
+            <div id="ctm" class="timer"></div>
+            <button id="cb" class="btn">ГОТОВО</button>
+        </div>
+    </div>
 
-const overlay = document.getElementById("overlay");
-const timerEl = document.getElementById("timer");
-const titleEl = document.getElementById("title");
-const textEl  = document.getElementById("text");
-const taskContainer = document.getElementById("taskContainer");
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        
+        // РЕЖИМ КАРТОЧКИ (если есть параметры в ссылке)
+        if (params.has('w')) {
+            const w = parseInt(params.get('w')) * 60000;
+            const p = parseInt(params.get('p'));
+            const f = params.get('f');
+            const l = params.get('l');
+            const tRaw = decodeURIComponent(params.get('t')).split(';');
+            const tasks = tRaw.map(x => ({ i: x.split('|')[0], t: x.split('|')[1] }));
 
-taskContainer.innerHTML = taskHTML;
+            if(f === 'OpenDyslexic') {
+                const s = document.createElement('style');
+                s.innerHTML = "@font-face { font-family: 'OpenDyslexic'; src: url('https://cdn.jsdelivr.net/npm/opendyslexic@1.0.3/OpenDyslexic-Regular.otf'); } body { font-family: 'OpenDyslexic' !important; }";
+                document.head.appendChild(s);
+            }
 
-let clickCounter = 0;
-let activeTime = 0;
-let idleCounter = 0;
-let pausePhase = false;
-let timer = pauseSeconds;
+            const i18n = { RU: "Минутка пользы", EN: "Break Time", DE: "Pause", CN: "休息" };
+            document.getElementById('ch').innerText = i18n[l] || i18n.RU;
 
-// ===== Триггеры по кликам =====
-document.addEventListener("pointerdown", () => {
-  clickCounter++;
-  idleCounter = 0;
+            let target = Date.now() + w;
+            setInterval(() => {
+                if(Date.now() >= target) { 
+                    target = Infinity; // Чтобы не срабатывало дважды
+                    showPause(tasks, p); 
+                }
+            }, 1000);
 
-  if(!pausePhase && interactionEvery > 0 && clickCounter >= interactionEvery){
-    showPause();
-  }
-});
+        } else {
+            // РЕЖИМ РЕДАКТОРА
+            document.getElementById('editor').style.display = 'block';
+            document.body.style.overflow = 'auto';
+        }
 
-// ===== Активное время =====
-setInterval(() => {
-  if(pausePhase) return;
-  idleCounter++;
-  if(idleCounter < idleTimeout){
-    activeTime++;
-    if(activeMinutes > 0 && activeTime >= activeMinutes * 60){
-      showPause();
-    }
-  }
-},1000);
+        function showPause(tasks, pTime) {
+            const task = tasks[Math.floor(Math.random()*tasks.length)];
+            document.getElementById('ci').innerText = task.i;
+            document.getElementById('ct').innerText = task.t;
+            document.getElementById('pause-overlay').classList.add('active');
+            
+            let left = pTime;
+            document.getElementById('ctm').innerText = left;
+            const pi = setInterval(() => {
+                left--;
+                document.getElementById('ctm').innerText = left;
+                if(left <= 0) {
+                    clearInterval(pi);
+                    document.getElementById('ctm').style.display = 'none';
+                    document.getElementById('cb').style.display = 'block';
+                }
+            }, 1000);
+            document.getElementById('cb').onclick = () => location.reload();
+        }
 
-// ===== Показ паузы =====
-function showPause(){
-  pausePhase = true;
-  overlay.style.display = "flex";
-  timer = pauseSeconds;
-  updateTimer();
-}
-
-// ===== Обновление таймера =====
-function updateTimer(){
-  const m = String(Math.floor(timer/60)).padStart(2,"0");
-  const s = String(timer%60).padStart(2,"0");
-  timerEl.textContent = m + ":" + s;
-}
-
-// ===== Таймер обратного отсчета =====
-const interval = setInterval(()=>{
-  if(!pausePhase) return;
-  timer--;
-  if(timer<0) timer=0;
-  updateTimer();
-
-  if(timer===0 && pausePhase){
-    // закрываем паузу
-    pausePhase=false;
-    overlay.style.display="none";
-    clickCounter=0;
-    activeTime=0;
-    idleCounter=0;
-  }
-},1000);
-
-</script>
+        function generateLink() {
+            const baseUrl = window.location.href.split('?')[0];
+            const tasks = encodeURIComponent(document.getElementById('T').value.replace(/\n/g, ';'));
+            const link = `${baseUrl}?w=${document.getElementById('W').value}&p=${document.getElementById('P').value}&f=${document.getElementById('F').value}&l=${document.getElementById('L').value}&t=${tasks}`;
+            
+            const iframeCode = `<iframe src="${link}" style="width:100%; height:100%; border:none;" allowtransparency="true"></iframe>`;
+            document.getElementById('link-output').innerText = iframeCode;
+        }
+    </script>
 </body>
-</html>' width="100%" height="600" frameborder="0" style="border:0;"></iframe>
+</html>
